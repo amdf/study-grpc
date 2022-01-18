@@ -1,0 +1,54 @@
+syntax = "proto3";
+package svc;
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+option go_package = "github.com/amdf/study-grpc/svc";
+
+/*
+простой вызов
+вызов и приём стрима
+отправка стрима и приём результата
+обмен сообщениями (двусторонний стрим)
+передать файл
+время как параметр
+*/
+
+message SimpleQuery {
+    string Text = 1;
+}
+
+message SimpleResponse {    
+    int32 RuneCount = 2;
+}
+
+message WantWords {
+    int32 Count = 1;
+    google.protobuf.Duration Delay = 2;
+}
+
+message Word {
+    google.protobuf.Timestamp t = 1;
+    string Text = 2;
+}
+
+message Number {
+    uint32 Value = 1;
+}
+
+message SumResult {
+    uint64 Value = 1;
+}
+
+message SomeText {
+    google.protobuf.Timestamp t = 1;
+    string Text = 2;
+}
+
+//TODO: file upload
+
+service SimpleService {
+    rpc SimpleFunction(SimpleQuery) returns (SimpleResponse);    
+    rpc GenerateWords(WantWords) returns (stream Word);
+    rpc Sum(stream Number) returns (SumResult);
+    rpc Exchange(stream SomeText) returns (stream SomeText);
+};
