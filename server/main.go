@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 
@@ -16,6 +17,7 @@ type SimpleServiceServer struct {
 }
 
 func (server *SimpleServiceServer) SimpleFunction(ctx context.Context, q *pb.SimpleQuery) (result *pb.SimpleResponse, err error) {
+	fmt.Println("SimpleFunction()")
 	return nil, status.Errorf(codes.Unimplemented, "method SimpleFunction not implemented")
 }
 func (server *SimpleServiceServer) GenerateWords(w *pb.WantWords, gwServer pb.SimpleService_GenerateWordsServer) error {
