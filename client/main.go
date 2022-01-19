@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"time"
@@ -10,30 +11,23 @@ import (
 	pb "github.com/amdf/study-grpc/svc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
-func main() {
-	conn, err := grpc.Dial("[::]:50051", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
-	if err != nil {
-		log.Fatalln("fail to connect", err)
-	}
-	defer conn.Close()
-
-	c := pb.NewSimpleServiceClient(conn)
+func CallSimpleFunction(c pb.SimpleServiceClient) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-
-	//simple method:
 
 	r, err := c.SimpleFunction(ctx, &pb.SimpleQuery{Text: "SoMeTeXt"})
 	if err != nil {
 		log.Fatalln("fail to call SimpleFunction()", err)
 	}
 	i := r.GetRuneCount()
-	log.Println("I. Rune count:", i)
+	fmt.Println("I. Rune count:", i)
+}
 
-	//method with argument stream:
+func CallSum(c pb.SimpleServiceClient) {
 	stream, err := c.Sum(context.Background())
 	if err != nil {
 		log.Fatalln("fail to call Sum()", err)
@@ -51,8 +45,45 @@ func main() {
 		log.Fatalln("error get Sum() result", err)
 	}
 	fmt.Println("II: Sum result:", result.Value)
+}
+
+func CallGenerateWords(c pb.SimpleServiceClient) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	stream, err := c.GenerateWords(ctx, &pb.WantWords{Count: 10, Delay: durationpb.New(time.Second)})
+	if err != nil {
+		return
+	}
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Println("error reading GenerateWords()", err)
+			break
+		}
+		fmt.Println("III: word", in.T.AsTime(), in.Text)
+	}
+}
+
+func main() {
+	conn, err := grpc.Dial("[::]:50051", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		log.Fatalln("fail to connect", err)
+	}
+	defer conn.Close()
+
+	c := pb.NewSimpleServiceClient(conn)
+
+	fmt.Println()
+
+	//simple method:
+	CallSimpleFunction(c)
+
+	//method with argument stream:
+	CallSum(c)
 
 	//method with result stream:
-	// ctx2, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	// c.GenerateWords(ctx2, &pb.WantWords{Count: 10, Delay: durationpb.New(time.Microsecond * 100)})
+	CallGenerateWords(c)
 }

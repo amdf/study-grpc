@@ -30,10 +30,11 @@ func (server *SimpleServiceServer) GenerateWords(w *pb.WantWords, stream pb.Simp
 
 	for i := int32(0); i < w.Count; i++ {
 		text := "word"
-		err := stream.Send(&pb.Word{Text: text})
+		err := stream.Send(&pb.Word{Text: text, T: timestamppb.New(time.Now())})
 		if err != nil {
 			return errors.New("error writing to stream")
 		}
+		time.Sleep(w.Delay.AsDuration())
 	}
 
 	return nil
