@@ -11,6 +11,7 @@ import (
 	pb "github.com/amdf/study-grpc/svc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -90,13 +91,20 @@ func CallExchange(c pb.SimpleServiceClient) {
 				if nil != stream.Send(&pb.SomeText{T: t, Text: text}) {
 					stop = true
 				}
-				fmt.Println(">>>", t.AsTime(), text)
+				fmt.Println(">>>", t.AsTime().Local().Format("15:04:05"), text)
 				ticker.Reset(time.Millisecond * 100 * time.Duration(rand.Intn(8)))
 			}
 		}
 
 		log.Println("Exchange() stop sending")
 	}(ctx)
+
+	ipaddr := "(unknown)"
+	p, ok := peer.FromContext(stream.Context())
+	if ok {
+		ipaddr = p.Addr.String()
+	}
+
 	for {
 		in, err := stream.Recv()
 		//if err == io.EOF {
@@ -106,7 +114,7 @@ func CallExchange(c pb.SimpleServiceClient) {
 			break
 		}
 
-		fmt.Println("<<<", in.T.AsTime(), in.Text)
+		fmt.Println("<<<", ipaddr, in.T.AsTime().Local().Format("15:04:05"), in.Text)
 	}
 }
 

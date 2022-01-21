@@ -12,6 +12,7 @@ import (
 
 	pb "github.com/amdf/study-grpc/svc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -59,6 +60,7 @@ func (server *SimpleServiceServer) Sum(stream pb.SimpleService_SumServer) error 
 
 func (server *SimpleServiceServer) Exchange(stream pb.SimpleService_ExchangeServer) error {
 	ctx, cancel := context.WithCancel(context.Background())
+
 	go func(ctx context.Context) {
 		var stop bool
 		ticker := time.NewTicker(time.Millisecond * 100 * time.Duration(rand.Intn(8)))
@@ -74,13 +76,20 @@ func (server *SimpleServiceServer) Exchange(stream pb.SimpleService_ExchangeServ
 				if nil != stream.Send(&pb.SomeText{T: t, Text: text}) {
 					stop = true
 				}
-				fmt.Println(">>>", t.AsTime(), text)
+				fmt.Println(">>>", t.AsTime().Local().Format("15:04:05"), text)
 				ticker.Reset(time.Millisecond * 100 * time.Duration(rand.Intn(8)))
 			}
 		}
 
 		log.Println("Exchange() stop sending")
 	}(ctx)
+
+	ipaddr := "(unknown)"
+	p, ok := peer.FromContext(stream.Context())
+	if ok {
+		ipaddr = p.Addr.String()
+	}
+
 	for {
 		in, err := stream.Recv()
 		//if err == io.EOF {
@@ -90,7 +99,7 @@ func (server *SimpleServiceServer) Exchange(stream pb.SimpleService_ExchangeServ
 			break
 		}
 
-		fmt.Println("<<<", in.T.AsTime(), in.Text)
+		fmt.Println("<<<", ipaddr, in.T.AsTime().Local().Format("15:04:05"), in.Text)
 	}
 	return nil
 }
