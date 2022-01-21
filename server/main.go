@@ -24,6 +24,8 @@ func (server *SimpleServiceServer) SimpleFunction(ctx context.Context, q *pb.Sim
 
 	count := len(q.Text)
 	result = &pb.SimpleResponse{RuneCount: int32(count)}
+	ipaddr := getAddr(ctx)
+	fmt.Println("request from addr", ipaddr)
 	return
 }
 
@@ -84,11 +86,7 @@ func (server *SimpleServiceServer) Exchange(stream pb.SimpleService_ExchangeServ
 		log.Println("Exchange() stop sending")
 	}(ctx)
 
-	ipaddr := "(unknown)"
-	p, ok := peer.FromContext(stream.Context())
-	if ok {
-		ipaddr = p.Addr.String()
-	}
+	ipaddr := getAddr(stream.Context())
 
 	for {
 		in, err := stream.Recv()
@@ -102,6 +100,15 @@ func (server *SimpleServiceServer) Exchange(stream pb.SimpleService_ExchangeServ
 		fmt.Println("<<<", ipaddr, in.T.AsTime().Local().Format("15:04:05"), in.Text)
 	}
 	return nil
+}
+
+func getAddr(ctx context.Context) string {
+	ipaddr := "(unknown)"
+	p, ok := peer.FromContext(ctx)
+	if ok {
+		ipaddr = p.Addr.String()
+	}
+	return ipaddr
 }
 
 func main() {
