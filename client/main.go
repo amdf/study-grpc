@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func CallSimpleFunction(c pb.SimpleServiceClient) {
@@ -50,7 +51,7 @@ func CallSum(c pb.SimpleServiceClient) {
 func CallGenerateWords(c pb.SimpleServiceClient) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	stream, err := c.GenerateWords(ctx, &pb.WantWords{Count: 10, Delay: durationpb.New(time.Second)})
+	stream, err := c.GenerateWords(ctx, &pb.WantWords{Count: 10, Delay: durationpb.New(time.Second / 4)})
 	if err != nil {
 		return
 	}
@@ -64,6 +65,48 @@ func CallGenerateWords(c pb.SimpleServiceClient) {
 			break
 		}
 		fmt.Println("III: word", in.T.AsTime(), in.Text)
+	}
+}
+
+func CallExchange(c pb.SimpleServiceClient) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stream, err := c.Exchange(ctx)
+	if nil != err {
+		return
+	}
+	go func(ctx context.Context) {
+		var stop bool
+		ticker := time.NewTicker(time.Millisecond * 100 * time.Duration(rand.Intn(8)))
+		defer ticker.Stop()
+
+		for !stop {
+			select {
+			case <-ctx.Done():
+				stop = true
+			case <-ticker.C:
+				t := timestamppb.New(time.Now())
+				text := "from client"
+				if nil != stream.Send(&pb.SomeText{T: t, Text: text}) {
+					stop = true
+				}
+				fmt.Println(">>>", t.AsTime(), text)
+				ticker.Reset(time.Millisecond * 100 * time.Duration(rand.Intn(8)))
+			}
+		}
+
+		log.Println("Exchange() stop sending")
+	}(ctx)
+	for {
+		in, err := stream.Recv()
+		//if err == io.EOF {
+		if err != nil {
+			cancel()
+			fmt.Println("Exchange() stop receiving")
+			break
+		}
+
+		fmt.Println("<<<", in.T.AsTime(), in.Text)
 	}
 }
 
@@ -86,4 +129,7 @@ func main() {
 
 	//method with result stream:
 	CallGenerateWords(c)
+
+	//bidirectional stream:
+	CallExchange(c)
 }

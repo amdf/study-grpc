@@ -70,9 +70,11 @@ func (server *SimpleServiceServer) Exchange(stream pb.SimpleService_ExchangeServ
 				stop = true
 			case <-ticker.C:
 				t := timestamppb.New(time.Now())
-				if nil != stream.Send(&pb.SomeText{T: t, Text: "this is text"}) {
+				text := "from server"
+				if nil != stream.Send(&pb.SomeText{T: t, Text: text}) {
 					stop = true
 				}
+				fmt.Println(">>>", t.AsTime(), text)
 				ticker.Reset(time.Millisecond * 100 * time.Duration(rand.Intn(8)))
 			}
 		}
@@ -81,7 +83,8 @@ func (server *SimpleServiceServer) Exchange(stream pb.SimpleService_ExchangeServ
 	}(ctx)
 	for {
 		in, err := stream.Recv()
-		if err == io.EOF {
+		//if err == io.EOF {
+		if err != nil {
 			cancel()
 			fmt.Println("Exchange() stop receiving")
 			break
