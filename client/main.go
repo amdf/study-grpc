@@ -16,12 +16,16 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func CallSimpleFunction(c pb.SimpleServiceClient) {
+type SimpleService struct {
+	ClientGRPC pb.SimpleServiceClient
+}
+
+func (client *SimpleService) SimpleFunction(text string) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	r, err := c.SimpleFunction(ctx, &pb.SimpleQuery{Text: "SoMeTeXt"})
+	r, err := client.ClientGRPC.SimpleFunction(ctx, &pb.SimpleQuery{Text: text})
 	if err != nil {
 		log.Fatalln("fail to call SimpleFunction()", err)
 	}
@@ -29,12 +33,12 @@ func CallSimpleFunction(c pb.SimpleServiceClient) {
 	fmt.Println("I. Rune count:", i)
 }
 
-func CallSum(c pb.SimpleServiceClient) {
-	stream, err := c.Sum(context.Background())
+func (client *SimpleService) Sum(num int) {
+	stream, err := client.ClientGRPC.Sum(context.Background())
 	if err != nil {
 		log.Fatalln("fail to call Sum()", err)
 	}
-	for i := 0; i < rand.Intn(20); i++ {
+	for i := 0; i < rand.Intn(num); i++ {
 		var n pb.Number
 		n.Value = uint32(rand.Int31n(25))
 		err = stream.Send(&n)
@@ -49,10 +53,10 @@ func CallSum(c pb.SimpleServiceClient) {
 	fmt.Println("II: Sum result:", result.Value)
 }
 
-func CallGenerateWords(c pb.SimpleServiceClient) {
+func (client *SimpleService) GenerateWords(count int32, delay time.Duration) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	stream, err := c.GenerateWords(ctx, &pb.WantWords{Count: 10, Delay: durationpb.New(time.Second / 4)})
+	stream, err := client.ClientGRPC.GenerateWords(ctx, &pb.WantWords{Count: count, Delay: durationpb.New(delay)})
 	if err != nil {
 		return
 	}
@@ -69,10 +73,10 @@ func CallGenerateWords(c pb.SimpleServiceClient) {
 	}
 }
 
-func CallExchange(c pb.SimpleServiceClient) {
+func (client *SimpleService) Exchange() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	stream, err := c.Exchange(ctx)
+	stream, err := client.ClientGRPC.Exchange(ctx)
 	if nil != err {
 		return
 	}
@@ -118,26 +122,36 @@ func CallExchange(c pb.SimpleServiceClient) {
 	}
 }
 
-func main() {
+func NewSimpleService() (s *SimpleService, err error) {
 	conn, err := grpc.Dial("[::]:50051", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
-		log.Fatalln("fail to connect", err)
+		return
 	}
-	defer conn.Close()
+
+	//TODO: close conn somewhere?
 
 	c := pb.NewSimpleServiceClient(conn)
+	s = &SimpleService{ClientGRPC: c}
+	return
+}
+
+func main() {
 
 	fmt.Println()
 
+	client, err := NewSimpleService()
+	if err != nil {
+		log.Fatalln("fail to connect", err)
+	}
 	//simple method:
-	CallSimpleFunction(c)
+	client.SimpleFunction("SoMeTeXt")
 
 	//method with argument stream:
-	CallSum(c)
+	client.Sum(20)
 
 	//method with result stream:
-	CallGenerateWords(c)
+	client.GenerateWords(10, time.Second/4)
 
 	//bidirectional stream:
-	CallExchange(c)
+	client.Exchange()
 }
