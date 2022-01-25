@@ -122,8 +122,32 @@ func (client *SimpleService) Exchange() {
 	}
 }
 
+func timingInterceptor(
+	ctx context.Context,
+	method string,
+	req, reply interface{},
+	cc *grpc.ClientConn,
+	invoker grpc.UnaryInvoker,
+	opts ...grpc.CallOption) error {
+	start := time.Now()
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	fmt.Printf(`--
+		call=%v
+		req=%#v
+		reply=%#v
+		time=%v
+		err=%v
+		`, method, req, reply, time.Since(start), err)
+	return err
+}
+
 func NewSimpleService() (s *SimpleService, err error) {
-	conn, err := grpc.Dial("[::]:50051", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+
+	conn, err := grpc.Dial("[::]:50051",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock(),
+		grpc.WithUnaryInterceptor(timingInterceptor),
+	)
 	if err != nil {
 		return
 	}
