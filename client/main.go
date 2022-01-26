@@ -10,6 +10,7 @@ import (
 
 	pb "github.com/amdf/study-grpc/svc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -141,12 +142,26 @@ func timingInterceptor(
 	return err
 }
 
-func NewSimpleService() (s *SimpleService, err error) {
+type SvcCredentials struct {
+	credentials.PerRPCCredentials
+	Token string
+}
 
+func (mc SvcCredentials) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	return map[string]string{"access-token": mc.Token}, nil
+}
+
+func (mc SvcCredentials) RequireTransportSecurity() bool {
+	return false
+}
+
+func NewSimpleService() (s *SimpleService, err error) {
+	tokenAuth := SvcCredentials{Token: "token1234"}
 	conn, err := grpc.Dial("[::]:50051",
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
 		grpc.WithUnaryInterceptor(timingInterceptor),
+		grpc.WithPerRPCCredentials(tokenAuth),
 	)
 	if err != nil {
 		return
@@ -169,13 +184,14 @@ func main() {
 	}
 	//simple method:
 	client.SimpleFunction("SoMeTeXt")
+	client.SimpleFunction("Number Two")
 
-	//method with argument stream:
-	client.Sum(20)
+	// //method with argument stream:
+	// client.Sum(20)
 
-	//method with result stream:
-	client.GenerateWords(10, time.Second/4)
+	// //method with result stream:
+	// client.GenerateWords(10, time.Second/4)
 
-	//bidirectional stream:
-	client.Exchange()
+	// //bidirectional stream:
+	// client.Exchange()
 }

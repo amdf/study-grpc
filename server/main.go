@@ -12,7 +12,10 @@ import (
 
 	pb "github.com/amdf/study-grpc/svc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -111,13 +114,38 @@ func getAddr(ctx context.Context) string {
 	return ipaddr
 }
 
+func authInterceptor(
+	ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (interface{}, error) {
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		tokens := md.Get("access-token")
+		if len(tokens) > 0 {
+			ok = ("token1234" == tokens[0])
+			fmt.Println("access:", ok)
+		}
+	}
+
+	if ok {
+		return handler(ctx, req)
+	}
+
+	return nil, status.Errorf(codes.PermissionDenied, "Auth Error")
+}
+
 func main() {
 	var server SimpleServiceServer
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatalln("fail to listen", err)
 	}
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(authInterceptor),
+	)
 	pb.RegisterSimpleServiceServer(s, &server)
 	log.Println("starting server at ", lis.Addr())
 	err = s.Serve(lis)
