@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -29,6 +30,16 @@ func (client *SimpleService) SimpleFunction(text string) {
 	r, err := client.ClientGRPC.SimpleFunction(ctx, &pb.SimpleQuery{Text: text})
 	if err != nil {
 		log.Fatalln("fail to call SimpleFunction()", err)
+	}
+	i := r.GetRuneCount()
+	fmt.Println("I. Rune count:", i)
+}
+
+func (client *SimpleService) SimpleFunctionWithContext(ctx context.Context, text string) {
+
+	r, err := client.ClientGRPC.SimpleFunction(ctx, &pb.SimpleQuery{Text: text})
+	if err != nil {
+		log.Fatalln("fail to call SimpleFunction() with context", err)
 	}
 	i := r.GetRuneCount()
 	fmt.Println("I. Rune count:", i)
@@ -183,8 +194,10 @@ func main() {
 		log.Fatalln("fail to connect", err)
 	}
 	//simple method:
-	client.SimpleFunction("SoMeTeXt")
-	client.SimpleFunction("Number Two")
+	client.SimpleFunction("Number One (w/o metadata)")
+
+	md := metadata.Pairs("Request-ID", "DEBUG_IDENTIFICATOR")
+	client.SimpleFunctionWithContext(metadata.NewOutgoingContext(context.Background(), md), "Number Two")
 
 	// //method with argument stream:
 	// client.Sum(20)

@@ -27,8 +27,7 @@ func (server *SimpleServiceServer) SimpleFunction(ctx context.Context, q *pb.Sim
 
 	count := len(q.Text)
 	result = &pb.SimpleResponse{RuneCount: int32(count)}
-	ipaddr := getAddr(ctx)
-	fmt.Println("request from addr", ipaddr)
+
 	return
 }
 
@@ -126,12 +125,21 @@ func authInterceptor(
 		tokens := md.Get("access-token")
 		if len(tokens) > 0 {
 			ok = ("token1234" == tokens[0])
-			fmt.Println("access:", ok)
 		}
 	}
 
 	if ok {
-		return handler(ctx, req)
+		result, err := handler(ctx, req)
+		ipaddr := getAddr(ctx)
+
+		rid := md.Get("Request-ID")
+		id := "(nothing)"
+		if len(rid) > 0 {
+			id = rid[0]
+		}
+
+		fmt.Println(ok, "ADDR=", ipaddr, "ID=", id, info.FullMethod)
+		return result, err
 	}
 
 	return nil, status.Errorf(codes.PermissionDenied, "Auth Error")
@@ -143,10 +151,12 @@ func main() {
 	if err != nil {
 		log.Fatalln("fail to listen", err)
 	}
+
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(authInterceptor),
 	)
 	pb.RegisterSimpleServiceServer(s, &server)
+
 	log.Println("starting server at ", lis.Addr())
 	err = s.Serve(lis)
 	if err != nil {
