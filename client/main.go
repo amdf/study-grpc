@@ -45,6 +45,22 @@ func (client *SimpleService) SimpleFunctionWithContext(ctx context.Context, text
 	fmt.Println("I. Rune count:", i)
 }
 
+func (client *SimpleService) SimpleFunctionWithHeaders(text string) {
+
+	ctx := context.Background()
+
+	var header, trailer metadata.MD
+
+	r, err := client.ClientGRPC.SimpleFunction(ctx, &pb.SimpleQuery{Text: text}, grpc.Header(&header), grpc.Trailer(&trailer))
+	if err != nil {
+		log.Fatalln("fail to call SimpleFunction()", err)
+	}
+	i := r.GetRuneCount()
+	fmt.Print("\r\n", header, "\r\n")
+	fmt.Println("I. Rune count:", i)
+	fmt.Println(trailer)
+}
+
 func (client *SimpleService) Sum(num int) {
 	stream, err := client.ClientGRPC.Sum(context.Background())
 	if err != nil {
@@ -198,6 +214,8 @@ func main() {
 
 	md := metadata.Pairs("Request-ID", "DEBUG_IDENTIFICATOR")
 	client.SimpleFunctionWithContext(metadata.NewOutgoingContext(context.Background(), md), "Number Two")
+
+	client.SimpleFunctionWithHeaders("Number three (with header)")
 
 	// //method with argument stream:
 	// client.Sum(20)

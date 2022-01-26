@@ -24,9 +24,19 @@ type SimpleServiceServer struct {
 }
 
 func (server *SimpleServiceServer) SimpleFunction(ctx context.Context, q *pb.SimpleQuery) (result *pb.SimpleResponse, err error) {
+	header := metadata.Pairs("header-key", "42")
+	if nil != grpc.SendHeader(ctx, header) {
+		err = status.Errorf(codes.Unknown, "unable to set header")
+	}
+	trailer := metadata.Pairs("trailer-key", "3.14")
+	if nil != grpc.SetTrailer(ctx, trailer) {
+		err = status.Errorf(codes.Unknown, "unable to set header")
+	}
 
 	count := len(q.Text)
 	result = &pb.SimpleResponse{RuneCount: int32(count)}
+
+	fmt.Println("SimpleFunction. Text = ", q.Text)
 
 	return
 }
@@ -126,6 +136,7 @@ func authInterceptor(
 		if len(tokens) > 0 {
 			ok = ("token1234" == tokens[0])
 		}
+		fmt.Println(`-- `, md)
 	}
 
 	if ok {
