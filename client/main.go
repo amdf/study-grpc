@@ -22,43 +22,46 @@ type SimpleService struct {
 	ClientGRPC pb.SimpleServiceClient
 }
 
-func (client *SimpleService) SimpleFunction(text string) {
+func (client *SimpleService) SimpleFunction(text string) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	r, err := client.ClientGRPC.SimpleFunction(ctx, &pb.SimpleQuery{Text: text})
+	r, err := client.ClientGRPC.SimpleFunction(ctx, &pb.SimpleQuery{NewText: text})
 	if err != nil {
-		log.Fatalln("fail to call SimpleFunction()", err)
+		return fmt.Errorf("fail to call SimpleFunction() %v", err)
 	}
 	i := r.GetRuneCount()
 	fmt.Println("I. Rune count:", i)
+	return nil
 }
 
-func (client *SimpleService) SimpleFunctionWithContext(ctx context.Context, text string) {
+func (client *SimpleService) SimpleFunctionWithContext(ctx context.Context, text string) error {
 
-	r, err := client.ClientGRPC.SimpleFunction(ctx, &pb.SimpleQuery{Text: text})
+	r, err := client.ClientGRPC.SimpleFunction(ctx, &pb.SimpleQuery{NewText: text})
 	if err != nil {
-		log.Fatalln("fail to call SimpleFunction() with context", err)
+		return fmt.Errorf("fail to call SimpleFunction() %v", err)
 	}
 	i := r.GetRuneCount()
 	fmt.Println("I. Rune count:", i)
+	return nil
 }
 
-func (client *SimpleService) SimpleFunctionWithHeaders(text string) {
+func (client *SimpleService) SimpleFunctionWithHeaders(text string) error {
 
 	ctx := context.Background()
 
 	var header, trailer metadata.MD
 
-	r, err := client.ClientGRPC.SimpleFunction(ctx, &pb.SimpleQuery{Text: text}, grpc.Header(&header), grpc.Trailer(&trailer))
+	r, err := client.ClientGRPC.SimpleFunction(ctx, &pb.SimpleQuery{NewText: text}, grpc.Header(&header), grpc.Trailer(&trailer))
 	if err != nil {
-		log.Fatalln("fail to call SimpleFunction()", err)
+		return fmt.Errorf("fail to call SimpleFunction() %v", err)
 	}
 	i := r.GetRuneCount()
 	fmt.Print("\r\n", header, "\r\n")
 	fmt.Println("I. Rune count:", i)
 	fmt.Println(trailer)
+	return nil
 }
 
 func (client *SimpleService) Sum(num int) {
@@ -202,7 +205,6 @@ func NewSimpleService() (s *SimpleService, err error) {
 }
 
 func main() {
-
 	fmt.Println()
 
 	client, err := NewSimpleService()
@@ -211,11 +213,16 @@ func main() {
 	}
 	//simple method:
 	client.SimpleFunction("Number One (w/o metadata)")
-
+	time.Sleep(time.Second)
 	md := metadata.Pairs("Request-ID", "DEBUG_IDENTIFICATOR")
 	client.SimpleFunctionWithContext(metadata.NewOutgoingContext(context.Background(), md), "Number Two")
-
+	time.Sleep(time.Second)
 	client.SimpleFunctionWithHeaders("Number three (with header)")
+	time.Sleep(time.Second)
+	t := time.NewTicker(time.Second / 5)
+	for range t.C {
+		client.SimpleFunction("Function Call")
+	}
 
 	// //method with argument stream:
 	// client.Sum(20)

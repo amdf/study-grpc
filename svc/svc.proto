@@ -8,7 +8,10 @@ import "google/protobuf/duration.proto";
 option go_package = "github.com/amdf/study-grpc/svc";
 
 message SimpleQuery {
-    string Text = 1;
+    reserved 1;
+    reserved "Text";
+    //string Text = 1;
+    string NewText = 2;
 }
 
 message SimpleResponse {    

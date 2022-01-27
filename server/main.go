@@ -11,11 +11,13 @@ import (
 	"time"
 
 	pb "github.com/amdf/study-grpc/svc"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/tap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -33,10 +35,10 @@ func (server *SimpleServiceServer) SimpleFunction(ctx context.Context, q *pb.Sim
 		err = status.Errorf(codes.Unknown, "unable to set header")
 	}
 
-	count := len(q.Text)
+	count := len(q.NewText)
 	result = &pb.SimpleResponse{RuneCount: int32(count)}
 
-	fmt.Println("SimpleFunction. Text = ", q.Text)
+	fmt.Println("SimpleFunction. NewText = ", q.NewText)
 
 	return
 }
@@ -156,7 +158,26 @@ func authInterceptor(
 	return nil, status.Errorf(codes.PermissionDenied, "Auth Error")
 }
 
+var m map[string]*rate.Limiter
+
+func rateLimiter(ctx context.Context, info *tap.Info) (context.Context, error) {
+	user := getAddr(ctx)
+	if m[user] == nil {
+		// NewLimiter returns a new Limiter that allows events up to rate r and permits
+		// bursts of at most b tokens.
+		m[user] = rate.NewLimiter(5, 1) // QPS, burst
+	}
+
+	// Allow indicates whether one event may happen at time.Now().
+	if !m[user].Allow() {
+		return nil, status.Errorf(codes.ResourceExhausted,
+			"client exceeded rate limit")
+	}
+	return ctx, nil
+}
+
 func main() {
+	m = make(map[string]*rate.Limiter)
 	var server SimpleServiceServer
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
@@ -165,6 +186,7 @@ func main() {
 
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(authInterceptor),
+		grpc.InTapHandle(rateLimiter),
 	)
 	pb.RegisterSimpleServiceServer(s, &server)
 
