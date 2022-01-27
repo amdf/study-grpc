@@ -8,12 +8,16 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"net/http"
 	"time"
 
 	pb "github.com/amdf/study-grpc/svc"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
@@ -176,10 +180,37 @@ func rateLimiter(ctx context.Context, info *tap.Info) (context.Context, error) {
 	return ctx, nil
 }
 
+func runGateway() {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Register gRPC server endpoint
+	// Note: Make sure the gRPC server is running properly and accessible
+	mux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+
+	addr := "localhost:50051"
+
+	err := pb.RegisterSimpleServiceHandlerFromEndpoint(ctx, mux, addr, opts)
+	if err != nil {
+		log.Fatalln("fail to register http", err)
+	}
+
+	httpaddr := "localhost:8081"
+
+	log.Println("starting http server at ", httpaddr)
+	// Start HTTP server (and proxy calls to gRPC server endpoint)
+
+	if err != http.ListenAndServe(httpaddr, mux) {
+		log.Fatalln("fail to serve http", err)
+	}
+}
+
 func main() {
 	m = make(map[string]*rate.Limiter)
 	var server SimpleServiceServer
-	lis, err := net.Listen("tcp", ":50051")
+	lis, err := net.Listen("tcp", "localhost:50051")
 	if err != nil {
 		log.Fatalln("fail to listen", err)
 	}
@@ -191,6 +222,9 @@ func main() {
 	pb.RegisterSimpleServiceServer(s, &server)
 
 	log.Println("starting server at ", lis.Addr())
+
+	go runGateway()
+
 	err = s.Serve(lis)
 	if err != nil {
 		log.Fatalln("fail to server", err)

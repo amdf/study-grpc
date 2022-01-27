@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.6.1
-// source: svc/svc.proto
+// source: svc.proto
 
 package svc
 
@@ -303,5 +303,5 @@ var SimpleService_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "svc/svc.proto",
+	Metadata: "svc.proto",
 }

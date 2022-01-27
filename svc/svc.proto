@@ -4,6 +4,7 @@ package svc;
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
+import "google/api/annotations.proto";
 
 option go_package = "github.com/amdf/study-grpc/svc";
 
@@ -42,7 +43,12 @@ message SomeText {
 }
 
 service SimpleService {
-    rpc SimpleFunction(SimpleQuery) returns (SimpleResponse);    
+    rpc SimpleFunction(SimpleQuery) returns (SimpleResponse){
+        option (google.api.http) = {
+            post: "/v1/simplefunc"
+            body: "*"
+            };
+    };    
     rpc GenerateWords(WantWords) returns (stream Word);
     rpc Sum(stream Number) returns (SumResult);
     rpc Exchange(stream SomeText) returns (stream SomeText);
