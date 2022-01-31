@@ -1,0 +1,132 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "svc.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "SimpleService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/simplefunc": {
+      "post": {
+        "operationId": "SimpleService_SimpleFunction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/svcSimpleResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/svcSimpleQuery"
+            }
+          }
+        ],
+        "tags": [
+          "SimpleService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "svcSimpleQuery": {
+      "type": "object",
+      "properties": {
+        "NewText": {
+          "type": "string",
+          "title": "string Text = 1;"
+        }
+      }
+    },
+    "svcSimpleResponse": {
+      "type": "object",
+      "properties": {
+        "RuneCount": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "svcSomeText": {
+      "type": "object",
+      "properties": {
+        "t": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "Text": {
+          "type": "string"
+        }
+      }
+    },
+    "svcSumResult": {
+      "type": "object",
+      "properties": {
+        "Value": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "svcWord": {
+      "type": "object",
+      "properties": {
+        "t": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "Text": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
