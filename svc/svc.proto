@@ -13,6 +13,7 @@ message SimpleQuery {
     reserved "Text";
     //string Text = 1;
     string NewText = 2;
+    google.protobuf.Timestamp Time = 3;
 }
 
 message SimpleResponse {    

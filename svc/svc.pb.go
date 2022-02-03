@@ -29,7 +29,8 @@ type SimpleQuery struct {
 	unknownFields protoimpl.UnknownFields
 
 	//string Text = 1;
-	NewText string `protobuf:"bytes,2,opt,name=NewText,proto3" json:"NewText,omitempty"`
+	NewText string               `protobuf:"bytes,2,opt,name=NewText,proto3" json:"NewText,omitempty"`
+	Time    *timestamp.Timestamp `protobuf:"bytes,3,opt,name=Time,proto3" json:"Time,omitempty"`
 }
 
 func (x *SimpleQuery) Reset() {
@@ -69,6 +70,13 @@ func (x *SimpleQuery) GetNewText() string {
 		return x.NewText
 	}
 	return ""
+}
+
+func (x *SimpleQuery) GetTime() *timestamp.Timestamp {
+	if x != nil {
+		return x.Time
+	}
+	return nil
 }
 
 type SimpleResponse struct {
@@ -387,9 +395,12 @@ var file_svc_proto_rawDesc = []byte{
 	0x75, 0x66, 0x2f, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x1a, 0x1c, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x61, 0x6e,
 	0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22,
-	0x33, 0x0a, 0x0b, 0x53, 0x69, 0x6d, 0x70, 0x6c, 0x65, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x18,
+	0x63, 0x0a, 0x0b, 0x53, 0x69, 0x6d, 0x70, 0x6c, 0x65, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x18,
 	0x0a, 0x07, 0x4e, 0x65, 0x77, 0x54, 0x65, 0x78, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x07, 0x4e, 0x65, 0x77, 0x54, 0x65, 0x78, 0x74, 0x4a, 0x04, 0x08, 0x01, 0x10, 0x02, 0x52, 0x04,
+	0x07, 0x4e, 0x65, 0x77, 0x54, 0x65, 0x78, 0x74, 0x12, 0x2e, 0x0a, 0x04, 0x54, 0x69, 0x6d, 0x65,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61,
+	0x6d, 0x70, 0x52, 0x04, 0x54, 0x69, 0x6d, 0x65, 0x4a, 0x04, 0x08, 0x01, 0x10, 0x02, 0x52, 0x04,
 	0x54, 0x65, 0x78, 0x74, 0x22, 0x2e, 0x0a, 0x0e, 0x53, 0x69, 0x6d, 0x70, 0x6c, 0x65, 0x52, 0x65,
 	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1c, 0x0a, 0x09, 0x52, 0x75, 0x6e, 0x65, 0x43, 0x6f,
 	0x75, 0x6e, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x09, 0x52, 0x75, 0x6e, 0x65, 0x43,
@@ -452,26 +463,27 @@ var file_svc_proto_goTypes = []interface{}{
 	(*Number)(nil),              // 4: svc.Number
 	(*SumResult)(nil),           // 5: svc.SumResult
 	(*SomeText)(nil),            // 6: svc.SomeText
-	(*duration.Duration)(nil),   // 7: google.protobuf.Duration
-	(*timestamp.Timestamp)(nil), // 8: google.protobuf.Timestamp
+	(*timestamp.Timestamp)(nil), // 7: google.protobuf.Timestamp
+	(*duration.Duration)(nil),   // 8: google.protobuf.Duration
 }
 var file_svc_proto_depIdxs = []int32{
-	7, // 0: svc.WantWords.Delay:type_name -> google.protobuf.Duration
-	8, // 1: svc.Word.t:type_name -> google.protobuf.Timestamp
-	8, // 2: svc.SomeText.t:type_name -> google.protobuf.Timestamp
-	0, // 3: svc.SimpleService.SimpleFunction:input_type -> svc.SimpleQuery
-	2, // 4: svc.SimpleService.GenerateWords:input_type -> svc.WantWords
-	4, // 5: svc.SimpleService.Sum:input_type -> svc.Number
-	6, // 6: svc.SimpleService.Exchange:input_type -> svc.SomeText
-	1, // 7: svc.SimpleService.SimpleFunction:output_type -> svc.SimpleResponse
-	3, // 8: svc.SimpleService.GenerateWords:output_type -> svc.Word
-	5, // 9: svc.SimpleService.Sum:output_type -> svc.SumResult
-	6, // 10: svc.SimpleService.Exchange:output_type -> svc.SomeText
-	7, // [7:11] is the sub-list for method output_type
-	3, // [3:7] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	7, // 0: svc.SimpleQuery.Time:type_name -> google.protobuf.Timestamp
+	8, // 1: svc.WantWords.Delay:type_name -> google.protobuf.Duration
+	7, // 2: svc.Word.t:type_name -> google.protobuf.Timestamp
+	7, // 3: svc.SomeText.t:type_name -> google.protobuf.Timestamp
+	0, // 4: svc.SimpleService.SimpleFunction:input_type -> svc.SimpleQuery
+	2, // 5: svc.SimpleService.GenerateWords:input_type -> svc.WantWords
+	4, // 6: svc.SimpleService.Sum:input_type -> svc.Number
+	6, // 7: svc.SimpleService.Exchange:input_type -> svc.SomeText
+	1, // 8: svc.SimpleService.SimpleFunction:output_type -> svc.SimpleResponse
+	3, // 9: svc.SimpleService.GenerateWords:output_type -> svc.Word
+	5, // 10: svc.SimpleService.Sum:output_type -> svc.SumResult
+	6, // 11: svc.SimpleService.Exchange:output_type -> svc.SomeText
+	8, // [8:12] is the sub-list for method output_type
+	4, // [4:8] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_svc_proto_init() }

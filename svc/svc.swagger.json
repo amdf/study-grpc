@@ -83,6 +83,10 @@
         "NewText": {
           "type": "string",
           "title": "string Text = 1;"
+        },
+        "Time": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     },

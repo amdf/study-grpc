@@ -42,7 +42,7 @@ func (server *SimpleServiceServer) SimpleFunction(ctx context.Context, q *pb.Sim
 	count := len(q.NewText)
 	result = &pb.SimpleResponse{RuneCount: int32(count)}
 
-	fmt.Println("SimpleFunction. NewText = ", q.NewText)
+	fmt.Println("SimpleFunction. NewText = ", q.NewText, "Time =", q.Time.AsTime().Local())
 
 	return
 }
@@ -197,7 +197,7 @@ func runGateway() {
 		log.Fatalln("fail to register http", err)
 	}
 
-	httpaddr := "localhost:8081"
+	httpaddr := "0.0.0.0:80"
 
 	log.Println("starting http server at ", httpaddr)
 	// Start HTTP server (and proxy calls to gRPC server endpoint)
