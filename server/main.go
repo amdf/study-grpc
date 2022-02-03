@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"image"
+	"image/draw"
+	"image/png"
 	"io"
 	"log"
 	"math/rand"
@@ -12,9 +16,11 @@ import (
 	"time"
 
 	pb "github.com/amdf/study-grpc/svc"
+	"github.com/golang/protobuf/ptypes/empty"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"golang.org/x/time/rate"
+	"google.golang.org/genproto/googleapis/api/httpbody"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -23,6 +29,11 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/tap"
 	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+const (
+	SVCRPCADDR  = "localhost:50051"
+	SVCHTTPADDR = "localhost:8081" //"0.0.0.0:80"
 )
 
 type SimpleServiceServer struct {
@@ -43,6 +54,23 @@ func (server *SimpleServiceServer) SimpleFunction(ctx context.Context, q *pb.Sim
 	result = &pb.SimpleResponse{RuneCount: int32(count)}
 
 	fmt.Println("SimpleFunction. NewText = ", q.NewText, "Time =", q.Time.AsTime().Local())
+
+	return
+}
+
+func (server *SimpleServiceServer) Image(context.Context, *empty.Empty) (body *httpbody.HttpBody, err error) {
+	var buf bytes.Buffer
+
+	bg := image.Black
+	rgba := image.NewRGBA(image.Rect(0, 0, 300, 200))
+	draw.Draw(rgba, rgba.Bounds(), bg, image.Point{}, draw.Src)
+
+	err = png.Encode(&buf, rgba)
+
+	body = &httpbody.HttpBody{
+		ContentType: "image/png",
+		Data:        buf.Bytes(),
+	}
 
 	return
 }
@@ -169,7 +197,7 @@ func rateLimiter(ctx context.Context, info *tap.Info) (context.Context, error) {
 	if m[user] == nil {
 		// NewLimiter returns a new Limiter that allows events up to rate r and permits
 		// bursts of at most b tokens.
-		m[user] = rate.NewLimiter(5, 1) // QPS, burst
+		m[user] = rate.NewLimiter(1, 1) // QPS, burst
 	}
 
 	// Allow indicates whether one event may happen at time.Now().
@@ -190,19 +218,15 @@ func runGateway() {
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
-	addr := "localhost:50051"
-
-	err := pb.RegisterSimpleServiceHandlerFromEndpoint(ctx, mux, addr, opts)
+	err := pb.RegisterSimpleServiceHandlerFromEndpoint(ctx, mux, SVCRPCADDR, opts)
 	if err != nil {
 		log.Fatalln("fail to register http", err)
 	}
 
-	httpaddr := "0.0.0.0:80"
-
-	log.Println("starting http server at ", httpaddr)
+	log.Println("starting http server at ", SVCHTTPADDR)
 	// Start HTTP server (and proxy calls to gRPC server endpoint)
 
-	if err != http.ListenAndServe(httpaddr, mux) {
+	if err != http.ListenAndServe(SVCHTTPADDR, mux) {
 		log.Fatalln("fail to serve http", err)
 	}
 }
@@ -210,7 +234,7 @@ func runGateway() {
 func main() {
 	m = make(map[string]*rate.Limiter)
 	var server SimpleServiceServer
-	lis, err := net.Listen("tcp", "localhost:50051")
+	lis, err := net.Listen("tcp", SVCRPCADDR)
 	if err != nil {
 		log.Fatalln("fail to listen", err)
 	}

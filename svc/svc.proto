@@ -2,9 +2,11 @@ syntax = "proto3";
 
 package svc;
 
+import "google/api/httpbody.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
 import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
 
 option go_package = "github.com/amdf/study-grpc/svc";
 
@@ -53,4 +55,9 @@ service SimpleService {
     rpc GenerateWords(WantWords) returns (stream Word);
     rpc Sum(stream Number) returns (SumResult);
     rpc Exchange(stream SomeText) returns (stream SomeText);
+    rpc Image(google.protobuf.Empty) returns (google.api.HttpBody) {
+		option (google.api.http) = {
+			get: "/v1/image"
+		};
+	}
 };

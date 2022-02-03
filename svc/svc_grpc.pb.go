@@ -8,6 +8,8 @@ package svc
 
 import (
 	context "context"
+	empty "github.com/golang/protobuf/ptypes/empty"
+	httpbody "google.golang.org/genproto/googleapis/api/httpbody"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -26,6 +28,7 @@ type SimpleServiceClient interface {
 	GenerateWords(ctx context.Context, in *WantWords, opts ...grpc.CallOption) (SimpleService_GenerateWordsClient, error)
 	Sum(ctx context.Context, opts ...grpc.CallOption) (SimpleService_SumClient, error)
 	Exchange(ctx context.Context, opts ...grpc.CallOption) (SimpleService_ExchangeClient, error)
+	Image(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*httpbody.HttpBody, error)
 }
 
 type simpleServiceClient struct {
@@ -142,6 +145,15 @@ func (x *simpleServiceExchangeClient) Recv() (*SomeText, error) {
 	return m, nil
 }
 
+func (c *simpleServiceClient) Image(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*httpbody.HttpBody, error) {
+	out := new(httpbody.HttpBody)
+	err := c.cc.Invoke(ctx, "/svc.SimpleService/Image", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SimpleServiceServer is the server API for SimpleService service.
 // All implementations must embed UnimplementedSimpleServiceServer
 // for forward compatibility
@@ -150,6 +162,7 @@ type SimpleServiceServer interface {
 	GenerateWords(*WantWords, SimpleService_GenerateWordsServer) error
 	Sum(SimpleService_SumServer) error
 	Exchange(SimpleService_ExchangeServer) error
+	Image(context.Context, *empty.Empty) (*httpbody.HttpBody, error)
 	mustEmbedUnimplementedSimpleServiceServer()
 }
 
@@ -168,6 +181,9 @@ func (UnimplementedSimpleServiceServer) Sum(SimpleService_SumServer) error {
 }
 func (UnimplementedSimpleServiceServer) Exchange(SimpleService_ExchangeServer) error {
 	return status.Errorf(codes.Unimplemented, "method Exchange not implemented")
+}
+func (UnimplementedSimpleServiceServer) Image(context.Context, *empty.Empty) (*httpbody.HttpBody, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Image not implemented")
 }
 func (UnimplementedSimpleServiceServer) mustEmbedUnimplementedSimpleServiceServer() {}
 
@@ -273,6 +289,24 @@ func (x *simpleServiceExchangeServer) Recv() (*SomeText, error) {
 	return m, nil
 }
 
+func _SimpleService_Image_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(empty.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SimpleServiceServer).Image(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/svc.SimpleService/Image",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SimpleServiceServer).Image(ctx, req.(*empty.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SimpleService_ServiceDesc is the grpc.ServiceDesc for SimpleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -283,6 +317,10 @@ var SimpleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SimpleFunction",
 			Handler:    _SimpleService_SimpleFunction_Handler,
+		},
+		{
+			MethodName: "Image",
+			Handler:    _SimpleService_Image_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
